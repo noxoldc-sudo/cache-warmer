@@ -1,9 +1,9 @@
-name: Cache Warmer (Full Browser)
+name: Cache Warmer Puppeteer Stealth
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # every 5 minutes
-  workflow_dispatch:       # manual trigger
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 jobs:
   warm_cache:
@@ -17,24 +17,30 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Puppeteer
+      - name: Install dependencies
         run: |
-          npm init -y
-          npm install puppeteer
+          npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
 
       - name: Run Puppeteer Cache Warmer
         run: |
           node -e "
-          const puppeteer = require('puppeteer');
+          const puppeteer = require('puppeteer-extra');
+          const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+          puppeteer.use(StealthPlugin());
           (async () => {
             const browser = await puppeteer.launch({ 
               headless: true,
-              args: ['--no-sandbox', '--disable-setuid-sandbox'] 
+              args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-blink-features=AutomationControlled'
+              ] 
             });
             const page = await browser.newPage();
             const now = new Date().toISOString();
             try {
-              await page.goto('https://avixy.in/cache-warm.php?key=123', { waitUntil: 'networkidle2', timeout: 30000 });
+              await page.goto('https://avixy.in/cache-warm.php?key=YOUR_SECRET_KEY', { waitUntil: 'networkidle2', timeout: 30000 });
               const body = await page.evaluate(() => document.body.innerText);
               if (body.startsWith('ok')) {
                 console.log(\`[\${now}] ✅ SUCCESS - \${body}\`);
