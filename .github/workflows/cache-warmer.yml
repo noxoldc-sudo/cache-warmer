@@ -1,0 +1,21 @@
+name: Cache Warmer
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # every 5 minutes
+  workflow_dispatch:       # allows manual run
+
+jobs:
+  warm_cache:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Hit Cache URL
+        run: |
+          RESPONSE=$(curl -s "https://avixy.in/cache-warm.php?key=123")
+          echo "Response: $RESPONSE"
+          if [[ "$RESPONSE" == ok* ]]; then
+            echo "✅ Cache warmed successfully"
+          else
+            echo "❌ Cache warm failed"
+          fi
