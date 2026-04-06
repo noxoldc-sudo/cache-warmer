@@ -1,27 +1,49 @@
-name: Cache Warmer
+name: Cache Warmer (Full Browser)
 
-# Run every 5 minutes
 on:
   schedule:
-    - cron: '*/5 * * * *'  # every 5 minutes
-  workflow_dispatch:       # allows manual run
+    - cron: '*/5 * * * *' # every 5 minutes
+  workflow_dispatch:       # manual trigger
 
 jobs:
   warm_cache:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Hit Cache URL with Logs
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install Puppeteer
         run: |
-          # Get current UTC time
-          NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          
-          # Request the cache URL
-          RESPONSE=$(curl -s "https://avixy.in/cache-warm.php?key=123")
-          
-          # Check if response starts with "ok"
-          if [[ "$RESPONSE" == ok* ]]; then
-            echo "[$NOW] ✅ SUCCESS - $RESPONSE"
-          else
-            echo "[$NOW] ❌ FAILED - ${RESPONSE:0:100}"
-          fi
+          npm init -y
+          npm install puppeteer
+
+      - name: Run Puppeteer Cache Warmer
+        run: |
+          node -e "
+          const puppeteer = require('puppeteer');
+          (async () => {
+            const browser = await puppeteer.launch({ 
+              headless: true,
+              args: ['--no-sandbox', '--disable-setuid-sandbox'] 
+            });
+            const page = await browser.newPage();
+            const now = new Date().toISOString();
+            try {
+              await page.goto('https://avixy.in/cache-warm.php?key=123', { waitUntil: 'networkidle2', timeout: 30000 });
+              const body = await page.evaluate(() => document.body.innerText);
+              if (body.startsWith('ok')) {
+                console.log(\`[\${now}] ✅ SUCCESS - \${body}\`);
+              } else {
+                console.log(\`[\${now}] ❌ FAILED - \${body.substring(0,100)}\`);
+              }
+            } catch(e) {
+              console.log(\`[\${now}] ❌ ERROR - \${e.message}\`);
+            } finally {
+              await browser.close();
+            }
+          })();"
