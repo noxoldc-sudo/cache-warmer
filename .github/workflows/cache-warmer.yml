@@ -2,36 +2,29 @@ name: Cache Warmer Puppeteer Stealth
 
 on:
   schedule:
-    - cron: '*/5 * * * *'   # every 5 minutes (GitHub minimum)
-  workflow_dispatch:
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    - cron: '*/5 * * * *'  # every 5 minutes (UTC)
+  workflow_dispatch:       # allows manual trigger anytime
 
 jobs:
   warm_cache:
     runs-on: ubuntu-latest
+
     steps:
+      # Checkout code (optional, but needed if you want to commit Node scripts later)
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+
+      # Setup Node.js
+      - name: Setup Node
+        uses: actions/setup-node@v3
         with:
-          node-version: 24
-      
-      - name: Install Puppeteer system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libnss3 libatk-bridge2.0-0 libdrm2 libgbm1 libxkbcommon0 libasound2
-      
-      - name: Cache node modules
-        uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: cache-warmer-node-modules-${{ hashFiles('package-lock.json') }}
-          restore-keys: cache-warmer-node-modules-
-      
+          node-version: 20
+
+      # Install Puppeteer + stealth plugin
       - name: Install Puppeteer & Stealth
-        run: npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
-      
+        run: |
+          npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
+
+      # Run the cache warmer
       - name: Run Puppeteer Cache Warmer
         run: |
           node -e "
@@ -53,7 +46,7 @@ jobs:
             const page = await browser.newPage();
             const now = new Date().toISOString();
             try {
-              await page.goto('https://avixy.in/cache-warm.php?key=123', { waitUntil: 'networkidle2', timeout: 30000 });
+              await page.goto('https://avixy.in/cache-warm.php?key=YOUR_SECRET_KEY', { waitUntil: 'networkidle2', timeout: 30000 });
               const body = await page.evaluate(() => document.body.innerText);
 
               if (body.startsWith('ok')) {
@@ -63,7 +56,6 @@ jobs:
               }
             } catch(e) {
               console.log(\`[\${now}] ❌ ERROR - \${e.message}\`);
-              process.exit(1);   // Make the step fail so you see it
             } finally {
               await browser.close();
             }
