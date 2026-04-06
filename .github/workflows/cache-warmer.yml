@@ -1,5 +1,6 @@
 name: Cache Warmer
 
+# Run every 5 minutes
 on:
   schedule:
     - cron: '*/5 * * * *'  # every 5 minutes
@@ -10,12 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Hit Cache URL
+      - name: Hit Cache URL with Logs
         run: |
-          RESPONSE=$(curl -s "https://avixy.in/cache-warm.php?key=123")
-          echo "Response: $RESPONSE"
+          # Get current UTC time
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          # Request the cache URL
+          RESPONSE=$(curl -s "https://avixy.in/cache-warm.php?key=YOUR_SECRET_KEY")
+          
+          # Check if response starts with "ok"
           if [[ "$RESPONSE" == ok* ]]; then
-            echo "✅ Cache warmed successfully"
+            echo "[$NOW] ✅ SUCCESS - $RESPONSE"
           else
-            echo "❌ Cache warm failed"
+            echo "[$NOW] ❌ FAILED - ${RESPONSE:0:100}"
           fi
