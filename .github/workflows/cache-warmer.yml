@@ -2,29 +2,24 @@ name: Cache Warmer Puppeteer Stealth
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # every 5 minutes (UTC)
-  workflow_dispatch:       # allows manual trigger anytime
+    - cron: '*/5 * * * *'  # every 5 minutes – works natively
+  workflow_dispatch:
 
 jobs:
   warm_cache:
     runs-on: ubuntu-latest
-
     steps:
-      # Checkout code (optional, but needed if you want to commit Node scripts later)
-      - uses: actions/checkout@v3
-
-      # Setup Node.js
+      - uses: actions/checkout@v4
+      
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
-
-      # Install Puppeteer + stealth plugin
+          node-version: 24
+      
       - name: Install Puppeteer & Stealth
         run: |
           npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
-
-      # Run the cache warmer
+      
       - name: Run Puppeteer Cache Warmer
         run: |
           node -e "
