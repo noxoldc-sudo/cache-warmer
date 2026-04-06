@@ -41,7 +41,7 @@ jobs:
             const page = await browser.newPage();
             const now = new Date().toISOString();
             try {
-              await page.goto('https://avixy.in/cache-warm.php?key=YOUR_SECRET_KEY', { waitUntil: 'networkidle2', timeout: 30000 });
+              await page.goto('https://avixy.in/cache-warm.php?key=123', { waitUntil: 'networkidle2', timeout: 30000 });
               const body = await page.evaluate(() => document.body.innerText);
 
               if (body.startsWith('ok')) {
