@@ -1,43 +1,37 @@
 name: Cache Warmer Puppeteer Stealth
 
-# Run every 3 minutes and also manually
 on:
   schedule:
-    - cron: '*/3 * * * *'  # every 3 minutes (UTC)
-  workflow_dispatch:       # manual trigger
+    - cron: '*/5 * * * *'   # every 5 minutes (GitHub minimum)
+  workflow_dispatch:
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # run all JS actions on Node 24
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   warm_cache:
     runs-on: ubuntu-latest
-
     steps:
-      # Checkout repo
       - uses: actions/checkout@v3
-
-      # Setup Node.js 24
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: 24
-
-      # Cache node_modules to speed up runs
+      
+      - name: Install Puppeteer system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libnss3 libatk-bridge2.0-0 libdrm2 libgbm1 libxkbcommon0 libasound2
+      
       - name: Cache node modules
         uses: actions/cache@v3
         with:
           path: node_modules
-          key: cache-warmer-node-modules-{{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            cache-warmer-node-modules-
-
-      # Install dependencies (puppeteer + stealth plugin)
+          key: cache-warmer-node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: cache-warmer-node-modules-
+      
       - name: Install Puppeteer & Stealth
-        run: |
-          npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
-
-      # Run Puppeteer cache warmer
+        run: npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
+      
       - name: Run Puppeteer Cache Warmer
         run: |
           node -e "
@@ -69,6 +63,7 @@ jobs:
               }
             } catch(e) {
               console.log(\`[\${now}] ❌ ERROR - \${e.message}\`);
+              process.exit(1);   // Make the step fail so you see it
             } finally {
               await browser.close();
             }
