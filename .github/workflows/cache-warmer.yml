@@ -2,31 +2,36 @@ name: Cache Warmer Puppeteer Stealth
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
-  workflow_dispatch:
+    - cron: '*/5 * * * *'  # every 5 minutes (UTC)
+  workflow_dispatch:       # allows manual trigger anytime
 
 jobs:
   warm_cache:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout code (optional, but needed if you want to commit Node scripts later)
       - uses: actions/checkout@v3
 
+      # Setup Node.js
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: 20
 
-      - name: Install dependencies
+      # Install Puppeteer + stealth plugin
+      - name: Install Puppeteer & Stealth
         run: |
           npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
 
+      # Run the cache warmer
       - name: Run Puppeteer Cache Warmer
         run: |
           node -e "
           const puppeteer = require('puppeteer-extra');
           const StealthPlugin = require('puppeteer-extra-plugin-stealth');
           puppeteer.use(StealthPlugin());
+
           (async () => {
             const browser = await puppeteer.launch({ 
               headless: true,
@@ -37,11 +42,13 @@ jobs:
                 '--disable-blink-features=AutomationControlled'
               ] 
             });
+
             const page = await browser.newPage();
             const now = new Date().toISOString();
             try {
               await page.goto('https://avixy.in/cache-warm.php?key=123', { waitUntil: 'networkidle2', timeout: 30000 });
               const body = await page.evaluate(() => document.body.innerText);
+
               if (body.startsWith('ok')) {
                 console.log(\`[\${now}] ✅ SUCCESS - \${body}\`);
               } else {
