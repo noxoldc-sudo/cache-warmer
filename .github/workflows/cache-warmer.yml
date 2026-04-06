@@ -1,30 +1,43 @@
 name: Cache Warmer Puppeteer Stealth
 
+# Run every 3 minutes and also manually
 on:
   schedule:
-    - cron: '*/5 * * * *'  # every 5 minutes (UTC)
-  workflow_dispatch:       # allows manual trigger anytime
+    - cron: '*/3 * * * *'  # every 3 minutes (UTC)
+  workflow_dispatch:       # manual trigger
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # run all JS actions on Node 24
 
 jobs:
   warm_cache:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout code (optional, but needed if you want to commit Node scripts later)
+      # Checkout repo
       - uses: actions/checkout@v3
 
-      # Setup Node.js
+      # Setup Node.js 24
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: 24
 
-      # Install Puppeteer + stealth plugin
+      # Cache node_modules to speed up runs
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: cache-warmer-node-modules-{{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            cache-warmer-node-modules-
+
+      # Install dependencies (puppeteer + stealth plugin)
       - name: Install Puppeteer & Stealth
         run: |
           npm install puppeteer puppeteer-extra puppeteer-extra-plugin-stealth
 
-      # Run the cache warmer
+      # Run Puppeteer cache warmer
       - name: Run Puppeteer Cache Warmer
         run: |
           node -e "
