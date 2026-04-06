@@ -17,7 +17,7 @@ jobs:
           NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           
           # Request the cache URL
-          RESPONSE=$(curl -s "https://avixy.in/cache-warm.php?key=YOUR_SECRET_KEY")
+          RESPONSE=$(curl -s "https://avixy.in/cache-warm.php?key=123")
           
           # Check if response starts with "ok"
           if [[ "$RESPONSE" == ok* ]]; then
